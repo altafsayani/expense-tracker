@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
+
+type RouteParams = {
+  params: {
+    id: string;
+  };
+};
 
 // GET a specific expense
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
     const { id } = params;
@@ -26,7 +32,7 @@ export async function GET(
 // PUT (update) an expense
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
     const { id } = params;
@@ -73,7 +79,7 @@ export async function PUT(
 // DELETE an expense
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
     const { id } = params;
