@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# House Expense Tracker
+
+A web application for tracking household expenses. Keep track of daily grocery bills, utility payments, and other expenses, and view reports to understand your spending habits.
+
+## Features
+
+- **Expense Tracking**: Record and manage expenses with details like amount, description, date, and category
+- **Category Management**: Create and manage expense categories
+- **Reports and Charts**: View visual representations of your expenses by category and month
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Technology Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript, TailwindCSS 4
+- **Backend**: Next.js API Routes
+- **Database**: SQLite with Prisma ORM 6.5
+- **Styling**: TailwindCSS
+- **Forms**: React Hook Form 7.55 with Zod 3.24 validation
+- **Charts**: Chart.js 4.4 with react-chartjs-2 5.3
+- **Date Handling**: date-fns 4.1
+- **Icons**: React Icons 5.5
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 20.0 or later
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/house-expense-tracker.git
+cd house-expense-tracker
+```
+
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Initialize the database
+```bash
+npx prisma migrate dev
+```
+
+4. Start the development server
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Dashboard**: View a summary of your expenses, including total spent and charts
+- **Expenses**: Add, edit, and delete expense entries
+- **Categories**: Manage expense categories
+- **Reports**: Generate reports for specific date ranges
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+house-expense-tracker/
+├── app/                      # Next.js App Router
+│   ├── api/                  # API Routes
+│   ├── categories/           # Categories page
+│   ├── expenses/             # Expenses page
+│   ├── reports/              # Reports page
+│   └── page.tsx              # Dashboard page
+├── components/               # React components
+│   ├── categories/           # Category-related components
+│   ├── dashboard/            # Dashboard-related components
+│   ├── expenses/             # Expense-related components
+│   ├── ui/                   # Reusable UI components
+│   └── Layout.tsx            # Main layout component
+├── lib/                      # Utility functions
+│   └── prisma.ts             # Prisma client
+├── prisma/                   # Prisma ORM
+│   └── schema.prisma         # Database schema
+├── utils/                    # Additional utility functions
+│   └── formatters.ts         # Formatting utilities
+└── public/                   # Static assets
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is open source and available under the [MIT License](LICENSE).
