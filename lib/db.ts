@@ -1,8 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { createClient } from '@libsql/client';
 
+// Add globalThis type extension
 declare global {
+  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
+  // eslint-disable-next-line no-var
   var libsql: ReturnType<typeof createClient> | undefined;
 }
 
