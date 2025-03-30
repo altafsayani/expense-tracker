@@ -1,5 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+
+interface Expense {
+  id: string;
+  amount: number;
+  description: string;
+  date: string;
+  category_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CategorySummary {
+  id: string;
+  name: string;
+  total: number;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,101 +30,79 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     
-    let dateFilter = {};
+    // Build Supabase query conditions
+    let query = db.supabase
+      .from('expenses')
+      .select('*');
     
-    if (startDate && endDate) {
-      dateFilter = {
-        date: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      };
-    } else if (startDate) {
-      dateFilter = {
-        date: {
-          gte: new Date(startDate),
-        },
-      };
-    } else if (endDate) {
-      dateFilter = {
-        date: {
-          lte: new Date(endDate),
-        },
-      };
+    if (startDate) {
+      query = query.gte('date', startDate);
     }
     
-    // Total expenses in the date range
-    const totalExpenses = await prisma.expense.aggregate({
-      where: dateFilter,
-      _sum: {
-        amount: true,
-      },
-    });
+    if (endDate) {
+      query = query.lte('date', endDate);
+    }
     
-    // Expenses by category
-    const expensesByCategory = await prisma.category.findMany({
-      select: {
-        id: true,
-        name: true,
-        expenses: {
-          where: dateFilter,
-          select: {
-            amount: true,
-          },
-        },
-      },
-    });
+    // Fetch all expenses within date range
+    const { data: expenses, error } = await query;
     
-    const categoryData = expensesByCategory.map(category => ({
-      id: category.id,
-      name: category.name,
-      total: category.expenses.reduce((sum, expense) => sum + expense.amount, 0),
-    }));
+    if (error) {
+      return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });
+    }
     
-    // Monthly expenses (for the last 6 months if no date range specified)
+    // Calculate total expenses
+    const total = expenses.reduce((sum: number, expense: Expense) => sum + Number(expense.amount), 0);
+    
+    // Get all categories
+    const { data: categories, error: categoriesError } = await db.supabase
+      .from('categories')
+      .select('*');
+    
+    if (categoriesError) {
+      return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
+    }
+    
+    // Group expenses by category
+    const expensesByCategory = categories.map((category: Category) => {
+      const categoryExpenses = expenses.filter((expense: Expense) => expense.category_id === category.id);
+      const categoryTotal = categoryExpenses.reduce((sum: number, expense: Expense) => sum + Number(expense.amount), 0);
+      
+      return {
+        id: category.id,
+        name: category.name,
+        total: categoryTotal,
+      };
+    }).filter((category: CategorySummary) => category.total > 0);
+    
+    // Group expenses by month (for the last 6 months if no date range specified)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     
-    const monthlyFilter = {
-      ...dateFilter,
-      date: {
-        ...(dateFilter as any).date,
-        gte: (dateFilter as any).date?.gte || sixMonthsAgo,
-      },
-    };
-    
-    const expenses = await prisma.expense.findMany({
-      where: monthlyFilter,
-      select: {
-        amount: true,
-        date: true,
-      },
-      orderBy: {
-        date: 'asc',
-      },
-    });
+    const filteredExpenses = startDate 
+      ? expenses 
+      : expenses.filter((expense: Expense) => new Date(expense.date) >= sixMonthsAgo);
     
     // Group expenses by month
     const monthlyData: Record<string, number> = {};
     
-    expenses.forEach(expense => {
+    filteredExpenses.forEach((expense: Expense) => {
       const date = new Date(expense.date);
       const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (monthlyData[monthYear]) {
-        monthlyData[monthYear] += expense.amount;
+        monthlyData[monthYear] += Number(expense.amount);
       } else {
-        monthlyData[monthYear] = expense.amount;
+        monthlyData[monthYear] = Number(expense.amount);
       }
     });
     
     return NextResponse.json({
-      total: totalExpenses._sum.amount || 0,
-      byCategory: categoryData,
+      total: total,
+      byCategory: expensesByCategory,
       byMonth: Object.keys(monthlyData).map(month => ({
         month,
         total: monthlyData[month],
-      })),
+      })).sort((a, b) => a.month.localeCompare(b.month)),
     });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch expense summary' }, { status: 500 });

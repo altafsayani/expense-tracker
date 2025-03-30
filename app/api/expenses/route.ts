@@ -1,92 +1,63 @@
+import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { z } from 'zod';
+
+const expenseSchema = z.object({
+  amount: z.number().positive({ message: "Amount must be positive" }),
+  description: z.string().min(1, { message: "Description is required" }),
+  date: z.string().refine(value => !isNaN(Date.parse(value)), {
+    message: "Invalid date format"
+  }),
+  categoryId: z.string().uuid({ message: "Invalid category ID" })
+});
 
 // GET all expenses
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const limitParam = searchParams.get('limit');
     
-    let where: any = {};
-    
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-    
-    if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
-    } else if (startDate) {
-      where.date = {
-        gte: new Date(startDate),
-      };
-    } else if (endDate) {
-      where.date = {
-        lte: new Date(endDate),
-      };
-    }
-    
-    // Parse the limit parameter if present
-    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
-    
-    const expenses = await prisma.expense.findMany({
-      where,
-      include: {
-        category: true,
-      },
-      orderBy: { date: 'desc' },
-      ...(limit && { take: limit })
-    });
+    const filter = categoryId ? { categoryId } : undefined;
+    const expenses = await db.getExpenses(filter);
     
     return NextResponse.json(expenses);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch expenses" },
+      { status: 500 }
+    );
   }
 }
 
 // POST new expense
 export async function POST(request: NextRequest) {
   try {
-    const { amount, description, date, categoryId } = await request.json();
+    const body = await request.json();
     
-    if (!amount || !description || !date || !categoryId) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      );
-    }
+    const validatedData = expenseSchema.parse(body);
     
-    // Validate category exists
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-    });
-    
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 400 }
-      );
-    }
-    
-    const expense = await prisma.expense.create({
-      data: {
-        amount: parseFloat(amount),
-        description,
-        date: new Date(date),
-        categoryId,
-      },
-      include: {
-        category: true,
-      },
+    // Create expense with properly formatted date
+    const expense = await db.createExpense({
+      ...validatedData,
+      date: new Date(validatedData.date)
     });
     
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ errors: error.errors }, { status: 400 });
+    }
+    
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: "Failed to create expense" },
+      { status: 500 }
+    );
   }
 } 

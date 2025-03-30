@@ -1,93 +1,97 @@
 # House Expense Tracker
 
-A web application for tracking household expenses. Keep track of daily grocery bills, utility payments, and other expenses, and view reports to understand your spending habits.
+A Next.js application for tracking household expenses.
 
 ## Features
 
-- **Expense Tracking**: Record and manage expenses with details like amount, description, date, and category
-- **Category Management**: Create and manage expense categories
-- **Reports and Charts**: View visual representations of your expenses by category and month
-- **Responsive Design**: Works on desktop and mobile devices
+- Add, edit, and delete expense categories
+- Add, edit, and delete expenses
+- View expense reports and summaries
+- Filter expenses by category and date
 
-## Technology Stack
+## Tech Stack
 
-- **Frontend**: Next.js 15, React 19, TypeScript, TailwindCSS 4
-- **Backend**: Next.js API Routes
-- **Database**: SQLite with Prisma ORM 6.5
-- **Styling**: TailwindCSS
-- **Forms**: React Hook Form 7.55 with Zod 3.24 validation
-- **Charts**: Chart.js 4.4 with react-chartjs-2 5.3
-- **Date Handling**: date-fns 4.1
-- **Icons**: React Icons 5.5
+- **Frontend**: Next.js 15.2, React 19, TypeScript
+- **UI**: Tailwind CSS
+- **Database**: Supabase PostgreSQL
+- **Form Handling**: React Hook Form with Zod validation
+- **Charting**: Chart.js with react-chartjs-2
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 20.0 or later
+- Node.js 18 or later
 - npm or yarn
+- Supabase account
 
 ### Installation
 
-1. Clone the repository
+1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/house-expense-tracker.git
 cd house-expense-tracker
 ```
 
-2. Install dependencies
+2. Install dependencies:
+
 ```bash
 npm install
-# or
-yarn install
 ```
 
-3. Initialize the database
-```bash
-npx prisma migrate dev
+3. Set up environment variables:
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Supabase  
+SUPABASE_URL="your-supabase-url"
+SUPABASE_ANON_KEY="your-supabase-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-role-key"
 ```
 
-4. Start the development server
+4. Run the development server:
+
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## Usage
-
-- **Dashboard**: View a summary of your expenses, including total spent and charts
-- **Expenses**: Add, edit, and delete expense entries
-- **Categories**: Manage expense categories
-- **Reports**: Generate reports for specific date ranges
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Project Structure
 
 ```
 house-expense-tracker/
-├── app/                      # Next.js App Router
-│   ├── api/                  # API Routes
-│   ├── categories/           # Categories page
-│   ├── expenses/             # Expenses page
-│   ├── reports/              # Reports page
-│   └── page.tsx              # Dashboard page
+├── app/                      # Next.js app router
+│   ├── api/                  # API routes
+│   ├── categories/           # Categories pages
+│   ├── expenses/             # Expenses pages
+│   ├── reports/              # Reports pages
+│   ├── layout.tsx            # Root layout
+│   └── page.tsx              # Home page
 ├── components/               # React components
-│   ├── categories/           # Category-related components
-│   ├── dashboard/            # Dashboard-related components
-│   ├── expenses/             # Expense-related components
-│   ├── ui/                   # Reusable UI components
-│   └── Layout.tsx            # Main layout component
-├── lib/                      # Utility functions
-│   └── prisma.ts             # Prisma client
-├── prisma/                   # Prisma ORM
-│   └── schema.prisma         # Database schema
-├── utils/                    # Additional utility functions
-│   └── formatters.ts         # Formatting utilities
-└── public/                   # Static assets
+│   ├── categories/           # Category components
+│   ├── dashboard/            # Dashboard components
+│   └── expenses/             # Expense components
+├── lib/                      # Library code
+│   ├── db.ts                 # Database utilities
+│   └── supabase.ts           # Supabase client
+├── public/                   # Static assets
+├── utils/                    # Utility functions
+├── .env                      # Environment variables
+└── next.config.mjs           # Next.js configuration
 ```
+
+## Deployment
+
+The application can be deployed to Vercel:
+
+1. Push your code to a GitHub repository
+2. Import your repository to Vercel
+3. Set up your environment variables
+4. Deploy
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License.

@@ -1,29 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-
-type RouteParams = {
-  params: {
-    id: string;
-  };
-};
+import { db } from '@/lib/db';
 
 // GET a specific expense
 export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
-    const expense = await prisma.expense.findUnique({
-      where: { id },
-      include: { category: true },
-    });
     
-    if (!expense) {
+    const { data: expense, error } = await db.supabase
+      .from('expenses')
+      .select('*, category:categories(*)')
+      .eq('id', id)
+      .single();
+    
+    if (error || !expense) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
     }
     
-    return NextResponse.json(expense);
+    // Transform to client format
+    const clientExpense = {
+      id: expense.id,
+      amount: Number(expense.amount),
+      description: expense.description,
+      date: expense.date,
+      categoryId: expense.category_id,
+      category: expense.category ? {
+        id: expense.category.id,
+        name: expense.category.name
+      } : {
+        id: expense.category_id,
+        name: 'Unknown Category'
+      },
+      createdAt: expense.created_at,
+      updatedAt: expense.updated_at
+    };
+    
+    return NextResponse.json(clientExpense);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch expense' }, { status: 500 });
   }
@@ -31,12 +45,12 @@ export async function GET(
 
 // PUT (update) an expense
 export async function PUT(
-  request: NextRequest,
-  { params }: RouteParams
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
-    const { amount, description, date, categoryId } = await request.json();
+    const { amount, description, date, categoryId } = await req.json();
     
     if (!amount || !description || !date || !categoryId) {
       return NextResponse.json(
@@ -46,31 +60,55 @@ export async function PUT(
     }
     
     // Validate category exists
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-    });
+    const { data: category, error: categoryError } = await db.supabase
+      .from('categories')
+      .select('*')
+      .eq('id', categoryId)
+      .single();
     
-    if (!category) {
+    if (categoryError || !category) {
       return NextResponse.json(
         { error: 'Category not found' },
         { status: 400 }
       );
     }
     
-    const expense = await prisma.expense.update({
-      where: { id },
-      data: {
+    const { data: expense, error } = await db.supabase
+      .from('expenses')
+      .update({
         amount: parseFloat(amount),
         description,
         date: new Date(date),
-        categoryId,
-      },
-      include: {
-        category: true,
-      },
-    });
+        category_id: categoryId,
+        updated_at: new Date()
+      })
+      .eq('id', id)
+      .select('*, category:categories(*)')
+      .single();
     
-    return NextResponse.json(expense);
+    if (error || !expense) {
+      return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 });
+    }
+    
+    // Transform to client format
+    const clientExpense = {
+      id: expense.id,
+      amount: Number(expense.amount),
+      description: expense.description,
+      date: expense.date,
+      categoryId: expense.category_id,
+      category: expense.category ? {
+        id: expense.category.id,
+        name: expense.category.name
+      } : {
+        id: expense.category_id,
+        name: 'Unknown Category'
+      },
+      createdAt: expense.created_at,
+      updatedAt: expense.updated_at
+    };
+    
+    return NextResponse.json(clientExpense);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 });
   }
@@ -78,13 +116,20 @@ export async function PUT(
 
 // DELETE an expense
 export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
     
-    await prisma.expense.delete({ where: { id } });
+    const { error } = await db.supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 });
+    }
     
     return NextResponse.json({ success: true });
   } catch (error) {
